@@ -6,12 +6,12 @@ components that each perform one of the aforementioned subtasks.
 
 |Component | Sub-task | Responsibilities |
 |----------|----------|------------------|
-|Crawling  | acquisition | Crawl the web & build a web graph |
+|Crawling  | acquisition | Crawl the web & accumulate data |
 |Link Analysis | processing | Apply Page Rank to documents in the web graph |
-|Text Transformation | processing | Parse tokens from documents |
+|Text Transformation | processing | Parse tokens and metadata from documents |
 |Indexing | storage, retrieval | Store & retrieve data from reverse index |
 |Ranking | processing | Sort documents retrieved from index |
-|Querying | retrieval | Deconstruct queries & retrieve data from index |
+|Querying | retrieval | Deconstruct queries & display results |
 
 
 This documentation is focused on the Indexing component, but it is important to
@@ -19,6 +19,7 @@ understand the system as a whole in order to understand the behavior the Index m
 provide. The diagram below should help provide some clarity on how Indexing
 interacts with the other components.
 
+INSERT DIAGRAM HERE
 
 ### Constraints
 When designing any large scale data storage service there are certain trade-offs
@@ -113,7 +114,7 @@ keeping the partitions distributed across hosts in RAM.
 One of the easiest, cheapest, and most scalable ways to accomplish this is to
 serialize the partitions and to store them in S3. New index partitions can easily
 be added, and partitions can be stored and retrieved in batches. This also enables a
-host to iterate over the objects in a given S3 bucket, so a host could be instructed
+node to iterate over the objects in a given S3 bucket, so a node could be instructed
 to process a particular range of index partitions by being provided with a starting
 and ending partition key.
 
@@ -159,17 +160,16 @@ time we write to a partition.
 ```javascript
 INDEX_PARTITION_METADATA_TABLE
 {
-  pKey: string "startingCharacter|startingToken|endingToken",
+  pKey: string,
+  sortKey: string "startingToken|endingToken",
   uri: string
 }
 ```
 The format of the partition key makes it possible to perform range queries that
 retrieve all documents for partitions relevant to a given token. Concatenating
-the tokens with the starting character in this format essentially provides sorting
-first based on the starting character for tokens in a given partition, secondarily
-by the token at the start of the range stored in that partition, and a tertiary
-ordering based on the token at the end of the alphabetical range stored in the
-partition.
+the tokens in this format essentially provides sorting first based on first by the
+token at the start of the range stored in that partition, and secondarily based on
+the token at the end of the alphabetical range stored in the partition.
 
 #### Document Schema
 In addition to storing information about which tokens are found in which documents,
@@ -200,9 +200,6 @@ DOCUMENT_TABLE
     wordCount: int,
     pageCreation: datetime,
     pageLastIndexed: datetime,
-    pageRank: float,
-    inboundLinks: int,
-    outboundLink: int,
     importantTokenRanges: [
       {
         fieldName: string,
@@ -229,12 +226,14 @@ block availability.
 #### Read
 Read is the core function of the index, and as such this needs to be a quick
 operation. Fortunately, partitioning our index enables asynchronous parallel
-searches to be run for sets of tokens. 
+searches to be run for sets of tokens.
 #### Write
+add docs & add tokens in the same call then, probably
 #### Delete
 #### Consistency
 #### Background Scans
 ##### Documents
+get rid of phantom docs, yo
 ##### Index Partitions
 **Cleanup**  
 **Resizing**
