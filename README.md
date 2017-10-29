@@ -156,7 +156,7 @@ avoid a database partition hotspot. We don't want to update the same document ev
 time we write to a partition.
 
 ```javascript
-INDEX_PARTITION_METADATA_TABLE
+INDEX_PARTITION_METADATA
 {
   pKey: string,
   sortKey: string,
@@ -188,7 +188,7 @@ by the index itself, but is instead needed for Ranking to use in their algorithm
 
 The proposed document metadata schema is this:
 ```javascript
-DOCUMENT_TABLE
+DOCUMENTS
 {
   pKey: string,
   internal: {
@@ -253,8 +253,8 @@ posted to kinesis, and thus the inputs for the second Lambdas will be of this fo
 ```
 
 These intermediary Lambdas will retrieve the partitions they need to search from S3,
-search for their specified tokens, and relay the results to an aggregator. The
-results sent to the aggregator will be of this format:
+search for their specified tokens, and relay the results to an aggregator via SQS. The
+message sent to the aggregator will be of this format:
 
 ```javascript
 {
@@ -274,6 +274,7 @@ results sent to the aggregator will be of this format:
   queryID: string
 }
 ```
+Note that the queryID is the SQS messageGroupID.
 
 The aggregator is responsible for combining the results of the parallel
 searches and resolving any consistency issues. This is done by ensuring that
@@ -332,7 +333,17 @@ It is important to note that the role of the aggregator can also be performed
 by the initial node that dispatched the search query.
 
 This diagram shows the flow & separation of roles in search:  
-INSERT DIAGRAM HERE
+![Read Operation](assets/read_operation.png)  
+
+1. Incoming request is sent to API gateway.
+2. API gateway triggers first lambda.
+3. First lambda retrieves partition URIs for given tokens from the INDEX_PARTITION_METADATA table.
+4. First lambda posts a record with to kinesis stream for each partition.
+5. Kinesis stream triggers second lambda for each partition.
+6. Second lambda retrieves partition from S3 bucket.
+7. Second lambda posts result to SQS.
+8. First lambda retrieves messages by group ID from SQS and combines results.
+9. API gateway captures lambda return and sends response.
 
 ### Write
 Like read, writes can also be performed concurrently. Writing to the index is more
@@ -365,16 +376,19 @@ The first step for a write to proceed is for it to acquire a lock on a the docum
 To do this it retrieves the current lockNo of the document from the database and
 sets the updating field to true. If the updating field was already true the write
 is abandoned and the appropriate returnCode is set in the response. If the document
-does not exist already, then the write continues. The next step in the write is
-to dispatch records of the following format to a kinesis stream which will trigger
-a Lambda to write the given token.
+does not exist already, then the write continues. If the write proceeds, then the
+lambda will check the INDEX_PARTITION_METADATA to find the partitions to which the
+provided tokens will be written. The next step in the write is to dispatch records of
+the following format to a kinesis stream which will trigger a Lambda to write the given
+tokens.
 
 ```javascript
 {
-  tokens: [
+  tokenOperations: [
     {
       token: string,
-      locations: [int]
+      locations: [int],
+      partitionURIs: [string]
     }
   ],
   lockNoNext: int,
@@ -383,12 +397,12 @@ a Lambda to write the given token.
 }
 ```
 
-Each triggered Lambda will then determine which index partitions it needs to write
-to. If more than one potential partition exists for the given token range, it will
+Each triggered Lambda will then determine which index partition it needs to write each
+token to. If more than one potential partition exists for the given token, it will
 prioritize writing to the smaller partition. If only one partition exists, but it is
 at maximum size, then a new partition will be created. Writes must also appropriately
-update the INDEX_PARTITION_METADATA_TABLE appropriately. After writing to the
-partition, the Lambda sends a record in the format below to an aggregator.
+update the INDEX_PARTITION_METADATA table appropriately. After writing to the
+partition, the Lambda sends a record in the format below to an aggregator via SQS.
 
 ```javascript
 {
@@ -397,6 +411,7 @@ partition, the Lambda sends a record in the format below to an aggregator.
   writeID: string
 }
 ```
+Note that the writeID is the SQS messageGroupID.
 
 The aggregator sends a response back to the requestor in the following format:
 
@@ -419,7 +434,18 @@ Valid return codes are:
 | 4 | internal failure | Write failed due to internal error. |
 
 This diagram depicts the flow of the write operation:  
-INSERT DIAGRAM HERE
+![Write Operation](assets/write_operation.png)
+
+1. Incoming request is sent to API gateway.
+2. API gateway triggers first lambda.
+3. First lambda acquires lock on document via DOCUMENTS table.
+4. First lambda retrieves partition URIs for given tokens from the INDEX_PARTITION_METADATA table.
+5. First lambda posts a record with to kinesis stream with write operations.
+6. Kinesis stream triggers second lambda, one for each record posted.
+7. Second lambda retrieves partition from S3 bucket.
+8. Second lambda writes to partition & posts result to SQS.
+9. First lambda retrieves messages by group ID from SQS and combines results.
+10. API gateway captures lambda return and sends response.
 
 ### Delete
 The delete operation has differing behavior depending on the input. The input
@@ -535,7 +561,7 @@ ngramSize of 1 are checked. The top N most frequently occurring tokens are added
 to the stopwords table.
 
 ```javascript
-STOPWORDS_TABLE
+STOPWORDS
 {
   pKey: string
   sortKey: int
