@@ -21,7 +21,7 @@ interacts with the other components.
 
 INSERT DIAGRAM HERE
 
-### Constraints
+## Constraints
 When designing any large scale data storage service there are certain trade-offs
 that must be made. The CAP theorem states that it's impossible for a distributed
 data store to provide more than two of the following qualities: Consistency,
@@ -57,14 +57,14 @@ distribute partitions across nodes without needing to coordinate transfer of
 partitions between nodes.
 
 
-### Index Representation
+## Index Representation
 This section will focus primarily on the structure of the index itself. This is
 the place to look if you want to know what information the index stores. This
 section also describes how the index is partitioned and persisted. The index is
 broken up into two major parts, the reverse index containing the tokens, and a
 document store containing document metadata.
 
-#### Index Schema
+### Index Schema
 This is the part of the index that actually stores the tokens. Aside from storing
 tokens, this structure also needs to store metadata that can only be determined
 by the functional dependency of token + docID -> metadata. Metadata that fits in
@@ -105,7 +105,7 @@ the locations within a given document. The necessity of this addition is
 explained in the consistency section. It is important to note that there will
 never be more than two versions of data saved for each token + document combo.
 
-#### Index Partitioning & Persistence
+### Index Partitioning & Persistence
 Since it is not possible to keep a large index in memory, the index must be
 partitioned, persisted, and distributed in some manner. Since one of our constraints
 is the lack of hosts, we will need to use a centralized data store rather than
@@ -142,7 +142,7 @@ which alphabetical range of tokens it contains. This enables us to easily narrow
 down which index partitions might contain a particular token thus providing
 much more performant reads.
 
-#### Index Metadata
+### Index Metadata
 Given that the index is partitioned and persisted externally, we need some way
 to determine which tokens are in which partitions as well as where each partition
 is stored. This needs to be done without having to load partitions into memory,
@@ -172,7 +172,7 @@ the tokens in this format essentially provides sorting first based on first by t
 token at the start of the range stored in that partition, and secondarily based on
 the token at the end of the alphabetical range stored in the partition.
 
-#### Document Schema
+### Document Schema
 In addition to storing information about which tokens are found in which documents,
 the search index must also store and retrieve metadata regarding each document.
 The types of metadata stored can be broken up into two categories: internal and
@@ -211,12 +211,12 @@ DOCUMENT_TABLE
   }
 }
 ```
-#### Document Persistence
+### Document Persistence
 Documents will be persisted in an external database. DynamoDB is a fitting option
 as it works well with other AWS Services, provides the range query functionality
 we require, and functions as a scalable black box.
 
-### Index Behavior
+## Index Behavior
 This section will focus on index behavior. This section describes how various
 operations can be performed on the index as well as the consistency behavior
 it will exhibit due to these operations. The three main operations that will be
@@ -224,7 +224,7 @@ performed on the index will be reads, writes, and deletes. Background processes
 will also need to be run on the index to perform operations that would otherwise
 block availability.
 
-#### Read
+### Read
 Read is the core function of the index, and as such this needs to be a quick
 operation. Fortunately, partitioning our index enables asynchronous parallel
 searches to be run for sets of tokens. In order to launch async searches of
@@ -331,10 +331,10 @@ Valid return codes are:
 It is important to note that the role of the aggregator can also be performed
 by the initial node that dispatched the search query.
 
-This diagram shows the flow & separation of roles in search:
+This diagram shows the flow & separation of roles in search:  
 INSERT DIAGRAM HERE
 
-#### Write
+### Write
 Like read, writes can also be performed concurrently. Writing to the index is more
 involved than reads. Writes begin with a call to index a document. This call will
 pass an object such as the one detailed below to pass all information needed to
@@ -421,7 +421,7 @@ Valid return codes are:
 This diagram depicts the flow of the write operation:  
 INSERT DIAGRAM HERE
 
-#### Delete
+### Delete
 The delete operation has differing behavior depending on the input. The input
 comes in the following format:  
 
@@ -488,7 +488,7 @@ Valid return codes are:
 | 3 | throttling failure | Delete failed due to database throttling. |
 | 4 | internal failure | Delete failed due to internal error. |
 
-#### Consistency
+### Consistency
 Since the index is partitioned and distributed, maintaining consistency can
 be quite challenging. There are a couple of scenarios which can create an
 inconsistent state. This section will enumerate those scenarios and describe
@@ -509,7 +509,7 @@ again this behavior only occurs if a delete operation terminates prior to termin
 of the read operation. Again, the order of invocation has no bearing on this
 behavior.
 
-**Writing**
+**Writing**  
 Writing can cause consistency issues if multiple writes are started for the same
 document at the same time. This consistency concern is avoided in this implementation
 by providing a lock on the document. Pessimistic locking is used since it is easier
@@ -518,12 +518,12 @@ occurring at once being an extremely unlikely scenario. Pessimistic locking is
 used simply due to the ease of implementing it. There is also no risk of deadlock
 since each Lambda will never need to acquire more than one lock at a time.
 
-#### Background Scans
+### Background Scans
 There are some operations that require a linear scan of the index. These operations
 will be run periodically and automatically in the background. These are largely
 maintenance operations.
 
-##### N-Gram Operations
+#### N-Gram Operations
 There are two operations that must be performed with respect to N-Gram maintenance.
 The first operation is to determine the most common words in the index. The second
 operation involves removing N-Grams that are no longer valid.
@@ -551,7 +551,7 @@ newly calculated stop words. This operation requires that text Transformation
 sends ngrams in an easily parsable format. Invalid ngrams are removed from the
 index and the tokencount for the related document is decremented.
 
-##### Index Partitions
+#### Index Partition Operations
 Index partitions require linear scans in order to delete tokens and documents
 that have been invalidated. Indexes also need resizing and redistribution as the
 size of the overall index grows.
@@ -562,5 +562,5 @@ belongs to a document that was marked for deletion. If so, the token is removed
 from the index and the tokenCount for the given document is decremented. When the
 tokenCount for a document reaches 0, it is removed from the index.
 
-**Resizing**
+**Resizing**  
 Details to come, design not completed.
