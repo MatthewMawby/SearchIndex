@@ -19,7 +19,7 @@ understand the system as a whole in order to understand the behavior the Index m
 provide. The diagram below should help provide some clarity on how Indexing
 interacts with the other components.
 
-INSERT DIAGRAM HERE
+![Indexing Overview](assets/overview.png)
 
 ## Constraints
 When designing any large scale data storage service there are certain trade-offs
