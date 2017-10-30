@@ -165,7 +165,8 @@ INDEX_PARTITION_METADATA
   pKey: string,
   sortKey: string,
   uri: string,
-  size: int
+  size: int,
+  versionNo: int
 }
 ```
 
@@ -328,6 +329,7 @@ Valid return codes are:
 | 1 | partial failure | Read failed for one or more tokens |
 | 2 | throttling failure | Read failed due to database throttling. |
 | 3 | internal failure | Read failed due to internal error. |
+| 4 | timeout failure | Read failed due to timeout. |
 
 It is important to note that the role of the aggregator is performed
 by the initial node that dispatched the search query.
@@ -400,9 +402,13 @@ tokens.
 Each triggered Lambda will then determine which index partition it needs to write each
 token to. If more than one potential partition exists for the given token, it will
 prioritize writing to the smaller partition. If only one partition exists, but it is
-at maximum size, then a new partition will be created. Writes must also appropriately
-update the INDEX_PARTITION_METADATA table appropriately. After writing to the
-partition, the Lambda sends a record in the format below to the aggregator via SQS.
+at maximum size, then a new partition will be created. Writes will use optimistic locking
+at the index level. The lambda will write to the index, add the index to s3 with a new
+s3 identifier, and then conditionally update the corresponding index metadata document.
+If the update is successful, the metadata table will now point to the updated partition,
+if the update fails, the lambda exits which will initiate a retry for the kinesis record.
+After writing to the partition, the Lambda sends a record in the format below to the
+aggregator via SQS.
 
 ```javascript
 {
@@ -432,6 +438,7 @@ Valid return codes are:
 | 2 | lock failure | Write failed because the document is locked. |
 | 3 | throttling failure | Write failed due to database throttling. |
 | 4 | internal failure | Write failed due to internal error. |
+| 5 | timeout failure | Write failed due to timeout. |
 
 **Write Operation**  
 ![Write Operation](assets/write_operation.png)  
@@ -442,10 +449,12 @@ Valid return codes are:
 4. First lambda retrieves partition URIs for given tokens from the INDEX_PARTITION_METADATA table.
 5. First lambda posts a record with to kinesis stream with write operations.
 6. Kinesis stream triggers second lambda, one for each record posted.
-7. Second lambda retrieves partition from S3 bucket.
-8. Second lambda writes to partition & posts result to SQS.
-9. First lambda retrieves messages by group ID from SQS and combines results.
-10. API gateway captures lambda return and sends response.
+7. Second lambda reads version number of index partition from the INDEX_PARTITION_METADATA table.
+8. Second lambda retrieves partition from S3 bucket, writes, and pushes back to s3 with new s3 id.
+9. Second lambda conditionally updates index metadata doc if version hasn't changed.
+10. Second lambda posts result to SQS.
+11. First lambda retrieves messages by group ID from SQS and combines results.
+12. API gateway captures lambda return and sends response.
 
 ### Delete
 The delete operation has differing behavior depending on the input. The input
@@ -513,6 +522,7 @@ Valid return codes are:
 | 2 | lock failure | Delete failed because the document is locked. |
 | 3 | throttling failure | Delete failed due to database throttling. |
 | 4 | internal failure | Delete failed due to internal error. |
+| 5 | timeout failure | Delete failed due to timeout. |
 
 ### Consistency
 Since the index is partitioned and distributed, maintaining consistency can
