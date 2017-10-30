@@ -19,7 +19,8 @@ understand the system as a whole in order to understand the behavior the Index m
 provide. The diagram below should help provide some clarity on how Indexing
 interacts with the other components.
 
-![Indexing Overview](assets/overview.png)
+**Indexing Overview**  
+![Indexing Overview](assets/overview.png)  
 
 ## Constraints
 When designing any large scale data storage service there are certain trade-offs
@@ -61,10 +62,13 @@ partitions between nodes.
 This section will focus primarily on the structure of the index itself. This is
 the place to look if you want to know what information the index stores. This
 section also describes how the index is partitioned and persisted. The index is
-broken up into two major parts, the reverse index containing the tokens, and a
-document store containing document metadata.
+broken up into two major parts, the reverse index partitions containing the tokens,
+and a database store containing document and index metadata.
 
-### Index Schema
+**Index Structure**  
+![Index Structure](assets/index_structure.png)  
+
+### Index Representation
 This is the part of the index that actually stores the tokens. Aside from storing
 tokens, this structure also needs to store metadata that can only be determined
 by the functional dependency of token + docID -> metadata. Metadata that fits in
@@ -142,7 +146,7 @@ which alphabetical range of tokens it contains. This enables us to easily narrow
 down which index partitions might contain a particular token thus providing
 much more performant reads.
 
-### Index Metadata
+### Index Metadata Table
 Given that the index is partitioned and persisted externally, we need some way
 to determine which tokens are in which partitions as well as where each partition
 is stored. This needs to be done without having to load partitions into memory,
@@ -172,11 +176,11 @@ the tokens in this format essentially provides sorting first based on first by t
 token at the start of the range stored in that partition, and secondarily based on
 the token at the end of the alphabetical range stored in the partition.
 
-### Document Schema
+### Document Table
 In addition to storing information about which tokens are found in which documents,
 the search index must also store and retrieve metadata regarding each document.
-The types of metadata stored can be broken up into two categories: internal and
-external.
+Document metadata will be persisted in the DOCUMENTS table in DynamoDB. The types
+of metadata stored can be broken up into two categories: internal and external.
 
 **Internal**  
 Internal metadata is metadata saved for each document that is needed to provide
@@ -211,10 +215,6 @@ DOCUMENTS
   }
 }
 ```
-### Document Persistence
-Documents will be persisted in an external database. DynamoDB is a fitting option
-as it works well with other AWS Services, provides the range query functionality
-we require, and functions as a scalable black box.
 
 ## Index Behavior
 This section will focus on index behavior. This section describes how various
@@ -329,10 +329,10 @@ Valid return codes are:
 | 2 | throttling failure | Read failed due to database throttling. |
 | 3 | internal failure | Read failed due to internal error. |
 
-It is important to note that the role of the aggregator can also be performed
+It is important to note that the role of the aggregator is performed
 by the initial node that dispatched the search query.
 
-This diagram shows the flow & separation of roles in search:  
+**Read Operation**  
 ![Read Operation](assets/read_operation.png)  
 
 1. Incoming request is sent to API gateway.
@@ -377,7 +377,7 @@ To do this it retrieves the current lockNo of the document from the database and
 sets the updating field to true. If the updating field was already true the write
 is abandoned and the appropriate returnCode is set in the response. If the document
 does not exist already, then the write continues. If the write proceeds, then the
-lambda will check the INDEX_PARTITION_METADATA to find the partitions to which the
+lambda will check the INDEX_PARTITION_METADATA table to find the partitions to which the
 provided tokens will be written. The next step in the write is to dispatch records of
 the following format to a kinesis stream which will trigger a Lambda to write the given
 tokens.
@@ -402,7 +402,7 @@ token to. If more than one potential partition exists for the given token, it wi
 prioritize writing to the smaller partition. If only one partition exists, but it is
 at maximum size, then a new partition will be created. Writes must also appropriately
 update the INDEX_PARTITION_METADATA table appropriately. After writing to the
-partition, the Lambda sends a record in the format below to an aggregator via SQS.
+partition, the Lambda sends a record in the format below to the aggregator via SQS.
 
 ```javascript
 {
@@ -433,8 +433,8 @@ Valid return codes are:
 | 3 | throttling failure | Write failed due to database throttling. |
 | 4 | internal failure | Write failed due to internal error. |
 
-This diagram depicts the flow of the write operation:  
-![Write Operation](assets/write_operation.png)
+**Write Operation**  
+![Write Operation](assets/write_operation.png)  
 
 1. Incoming request is sent to API gateway.
 2. API gateway triggers first lambda.
