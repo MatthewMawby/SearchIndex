@@ -560,9 +560,13 @@ will be run periodically and automatically in the background. These are largely
 maintenance operations.
 
 #### N-Gram Operations
-There are two operations that must be performed with respect to N-Gram maintenance.
-The first operation is to determine the most common words in the index. The second
-operation involves removing N-Grams that are no longer valid.
+N-Grams require that determine a list of stop words to provide to Text Transformation.
+In order to keep our writes performant, we will determine stop words with a background
+scan rather than adding the logic to maintain the list at token insertion time. This
+simplifies the implementation of stop words, while keeping the option open to switch
+to the other method later. The largest drawback to collecting stop words this way is
+that it causes consistency issues. The stop words won't represent a consistent state
+of the index since changes to the tokens may happen during stop word collection.
 
 **Determining stop words**
 This operation requires a process to iterate over all partitions of the index and
@@ -580,12 +584,6 @@ STOPWORDS
 
 The partition key is the token and the sort key is the number of occurences.
 
-**N-Gram Invalidation**  
-After the stop words have been updated, a scan can be performed that iterates
-over all tokens, and removes tokens of ngramSize > 1 that contain one of the
-newly calculated stop words. This operation requires that text Transformation
-sends ngrams in an easily parsable format. Invalid ngrams are removed from the
-index and the tokencount for the related document is decremented.
 
 #### Index Partition Operations
 Index partitions require linear scans in order to delete tokens and documents
@@ -598,5 +596,136 @@ belongs to a document that was marked for deletion. If so, the token is removed
 from the index and the tokenCount for the given document is decremented. When the
 tokenCount for a document reaches 0, it is removed from the index.
 
-**Resizing**  
-Details to come, design not completed.
+**Resizing and Redistribution**  
+This will involve a linear scan of all partitions. If a partition is at the maximum
+size, the partition must be split into two partitions of half the size. This
+operation will also need to check the surrounding partitions so that it can redistribute
+token ranges to minimize overlap. This is to ensure that any given token is only found
+in one partition (at least until we have enough data for one token to fill a partition).
+This keeps reads and writes performant. Optimistic locking will be used at the partition
+level to ensure that changes do not affect other operations. This also ensures that consistency
+is maintained in case a partition is written to during resizing.
+
+## Testing
+Testing will be performed in two stages. First unit testing, to verify that individual
+components and services behave as expected. This will help us to sift out simple bugs
+before they manifest into complex system-wide errors. Once we complete our services
+we will perform integration testing to ensure the operations work well with each other
+and that all sub-components behave as expected when operating in conjunction.
+
+### Unit Testing
+Since we are using two different languages for our Lambdas, we will need to define
+unit testing standards for both of them.
+
+**Python**
+Python has a built in testing library 'unittest'. This library allows us to easily
+create test classes as well as methods. It also provides an easy way to mock dependencies
+which is critically important when writing unit tests for a large scale system.
+Our python code should also be optimally testable, which means we should abstract
+away dependencies with some sort of wrapper, and inject the wrapper as a dependency to other
+components. This necessity for this will become obvious as the number of interactions
+with outside services grows for a component.
+
+In order to run the unit tests we will use PyTest with Coverage.py. These two libraries
+work very well together, and can provide us with automated testing that reports unit
+test coverage. PyTest can be easily integrated into testing scripts which could enable
+us to create interesting metrics such as unit testing velocity. (What % of unpushed
+code is covered by current unit tests)
+
+**Java**
+The philosophy for testing Java is the same as with python, but the frameworks
+for doing so are different. We will use Junit to create our test classes and to
+run our tests. In order to mock dependencies, we'll use the Mockito library. The
+Mockito library is powerful enough to mock dependencies, but it doesn't enable you
+to mock private methods or members. This enforces good coding practices such as
+using the builder pattern for dependency injection. Again, this helps ensure our
+sub-components are decoupled which is important in the long run. We will use EclEmma
+to keep track of our unit testing coverage for Java.
+
+### Integration Testing
+Integration testing will be performed in order to ensure our Indexing operations
+exhibit consistent behavior when used together. They also help us to ensure that
+the behavior of each individual service is correct in terms of inputs and outputs.
+This is critical for integration with other components.
+
+In order to perform our integration testing, we will need a separate environment
+not exposed to the outside world. We can accomplish this simply by duplicating our
+AWS Services and changing the URIs in our component configuration. In this DEVO
+environment we should be able to create an index state consistent with the index
+state in the middle of another operation. For example, we could create a "mid-write"
+state that has a non-expired pessimistic lock on a document, and partially updated
+tokens for that document. Then we can call our read service on the index to ensure
+that the consistency behavior we expect is exhibited. This provides an easy method
+for testing how operations behave while other operations are in progress since it
+would otherwise require perfect timing.
+
+**Integration Testing Scenarios**  
+
+| Scenario | Expectation |
+|----------|-------------|
+| Read while Write-in-progress | Read returns state prior to write |
+| Write finishes during Read | Read returns state post write |
+| Delete during Read | Read returns state post delete |
+| Write while delete in progress | Write succeeds |
+| Resize during Read/Write/Del | Read/Write/Del exhibit normal behavior |
+| Read | Read works with expected input/outputs |
+| Write | Write works with expected input/outputs |
+| Delete | Delete works with expected input/outputs |
+
+## Quality Metrics
+We will keep track of metrics both to ensure that our system is behaving as expected,
+but also to see how we can improve performance and behavior. Additionally, we will
+use metrics to keep track of the software development process and to track the
+quality of the code base. These metrics will help keep us honest and ensure that
+we are meeting our software development and coding standards.
+
+**Search Engine Quality Metrics**
+Scalability:
+- Number of Failed Operations: This number should increase linearly with the size
+of the index. If this increases faster than the size of the index, then we should
+investigate the distribution of failure causes to see what is inhibiting scalability.
+
+- Average Kinesis Iterator Age: The kinesis stream is one of the major Scalability
+bottlenecks present in our application. If the kinesis iterator age is increasing, it
+means requests are coming in faster than they can be processed by worker nodes. If
+we see an increase here we will either need to increase the number of shards in our stream,
+or increase the number of streams and use a consistent hash to decide which stream
+to post records to.
+
+Performance:
+- Average Read Time: This is the core functionality of our index, and reads should
+be very performant. It's also important that we don't see significant growth in this
+figure over time. If we do, that means partition redistribution is not happening frequently
+enough.
+
+- Average Write Time: This is another core operation for our index. This operation
+should remain consistent no matter what the size of the index, so any growth should
+correspond directly with the size of the input. If this isn't the case, investigation
+is required.
+
+Correctness:
+- Precision: This metric keeps track of what ratio of documents retrieved
+are relevant. This metric will likely have to be generated using test fixtures
+in the DEVO environment.
+
+- Recall: This metric keeps track of the ratio of correct documents are retrieved
+out of all relevant documents in the index. This metric will also have to be generated
+using test fixtures in the DEVO environment to ensure we know the real state of the index.
+
+**Software Development Process Metrics**
+
+**Code Base Metrics**
+Average Function Length: This metric is used to determine if functions are performing
+too much logic. This metric will be stratified for Python and Java.
+
+Average File Length: This metric can help us determine which packages or modules
+are responsible for too much behavior. This will again by stratified by programming language.
+
+Number of Clones (Java): This metric will utilize a tool named simian to help
+us determine where logic is duplicated in our code. This will help us keep our
+code loosely coupled so we can easily make changes. This ease of change helps
+make our codebase highly maintainable.
+
+## Coding Standards
+**Python**
+**Java**
