@@ -642,6 +642,13 @@ using the builder pattern for dependency injection. Again, this helps ensure our
 sub-components are decoupled which is important in the long run. We will use EclEmma
 to keep track of our unit testing coverage for Java.
 
+**Unit Testing Scenarios**  
+As unit testing is specific to the code being tested, unit test cases will be
+documented in the accompanying documentation for each module/class. We will largely
+perform black-box testing to ensure that our tests do not break with changing
+implementations, however some white box testing will be required to mock external
+dependencies.
+
 ### Integration Testing
 Integration testing will be performed in order to ensure our Indexing operations
 exhibit consistent behavior when used together. They also help us to ensure that
@@ -727,5 +734,73 @@ code loosely coupled so we can easily make changes. This ease of change helps
 make our codebase highly maintainable.
 
 ## Coding Standards
-**Python**
+**Python**  
+We will be following the PEP 8 style guide for Python. The Python version we will
+use is Python 2.7.
+
+Naming Conventions:
+
+|Use Case |Convention|
+|---------|----------|
+|variables| snake case|
+|methods | snake case|
+|classes | upper camel case |
+|modules | snake case |
+|constants | constant case |
+
+Note: Methods intended to be private to a given module or class must be snake case
+prepended with an underscore.
+
+Comments:  
+In-line comments should be used to indicate the purpose of each block of code. All
+publically available methods should be commented with the types of inputs and outputs.
+All modules and classes should have a block comment explaining the purpose of the
+module/class as well as any global/member variables.
+
+
 **Java**
+We will be following the Google Java style guide. The Java version we will
+use is Java 9.
+
+Naming Conventions:
+
+|Use Case |Convention|
+|---------|----------|
+|package| lower case |
+|classes | upper camel case |
+|method names | lower camel case |
+|constants | constant case |
+| variables | lower camel case |
+
+Comments:  
+In-line comments should be used to indicate the purpose of each block of code. All
+publically available methods should be commented with the types of inputs and outputs.
+All classes should have a block comment explaining the purpose of the class as well
+as the purpose of all member variables.
+
+**Documentation**  
+All documentation will be written in markdown. Documentation will exist for every
+class or module with an interface specified for all public methods. Each service
+will be documented with a diagram to show both the structure of the service as well
+as the flow of events during service execution. Documentation for each service will
+link to documentation for each constituent class/module. Additionally, documentation
+for each service must address all design considerations and consistency behaviors
+thoroughly enough to determine the precise modifications to the state of the index
+that each operation performs.
+
+## Division of Labor
+Search Service - This service entails receiving a request over REST, executing a
+parallel search, aggregating results, and returning the results via REST.
+
+Write Service - This service entails receiving a request over REST, executing a
+parallel write, aggregating results, and returning the results via REST.
+
+Stop Word Service - This service entails receiving a request over REST, retrieving
+the stop words from the database, and returning the results via REST.
+
+Stop Word Generation - This job entails a linear scan of all index partitions to
+determine the current set of stop words based on the index content.
+
+Index Resizing and Redistribution - This job entails a linear scan of all index
+partitions to split index partitions that are too large as well as to minimize
+the overlap of token ranges stored in each index partition.
