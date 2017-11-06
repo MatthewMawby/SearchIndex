@@ -789,18 +789,27 @@ thoroughly enough to determine the precise modifications to the state of the ind
 that each operation performs.
 
 ## Division of Labor
-Search Service - This service entails receiving a request over REST, executing a
+**Search Service** - This service entails receiving a request over REST, executing a
 parallel search, aggregating results, and returning the results via REST.
 
-Write Service - This service entails receiving a request over REST, executing a
+**Write Service** - This service entails receiving a request over REST, executing a
 parallel write, aggregating results, and returning the results via REST.
 
-Stop Word Service - This service entails receiving a request over REST, retrieving
+**Stop Word Service** - This service entails receiving a request over REST, retrieving
 the stop words from the database, and returning the results via REST.
 
-Stop Word Generation - This job entails a linear scan of all index partitions to
+**Stop Word Generation** - This job entails a linear scan of all index partitions to
 determine the current set of stop words based on the index content.
 
-Index Resizing and Redistribution - This job entails a linear scan of all index
+**Index Resizing and Redistribution** - This job entails a linear scan of all index
 partitions to split index partitions that are too large as well as to minimize
 the overlap of token ranges stored in each index partition.
+
+
+| Task | Assignee |
+|------|----------|
+|Search Service | |
+|Write Service | |
+|Stop Word Service | |
+|Stop Word Generation | |
+|Index Resizing & Redistribution | |  
