@@ -1,5 +1,6 @@
 ## Overview
-Creating a search index for a large number of documents is not an easy task. It requires the acquisition, processing, storage, and retrieval of large amounts of
+Creating a search index for a large number of documents is not an easy task. It
+requires the acquisition, processing, storage, and retrieval of large amounts of
 data. One of the main use cases for such an index is a web search engine. A search
 engine capable of indexing the web can be divided into several large architectural
 components that each perform one of the aforementioned subtasks.
