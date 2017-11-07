@@ -650,6 +650,16 @@ perform black-box testing to ensure that our tests do not break with changing
 implementations, however some white box testing will be required to mock external
 dependencies.
 
+These are the scenarios that MUST succeed in order for correct Indexing behavior.
+
+| Scenario | Expectation |
+|----------|-------------|
+| Acquire lock on Document | Lock field on Document is updated in database |
+| Release lock on Document | Lock field on Document is updated in database |
+| Acquire partition version number | Correct version number is returned for a given partition |
+| Conditionally update partition | Partition version number and URI are updated if the partition version number has not changed. If the version number has changed the partition write restarts. |
+| Read restarts for document conflicts | Read operations are re-run for tokens from the same document if the version numbers are conflicting |
+
 ### Integration Testing
 Integration testing will be performed in order to ensure our Indexing operations
 exhibit consistent behavior when used together. They also help us to ensure that
@@ -672,13 +682,17 @@ would otherwise require perfect timing.
 | Scenario | Expectation |
 |----------|-------------|
 | Read while Write-in-progress | Read returns state prior to write |
-| Write finishes during Read | Read returns state post write |
-| Delete during Read | Read returns state post delete |
-| Write while delete in progress | Write succeeds |
-| Resize during Read/Write/Del | Read/Write/Del exhibit normal behavior |
+| Write finishes during Read | Read returns the post write state. |
+| Delete during Read | Read returns the post delete state. |
+| Write while delete in progress | Write succeeds and the document is not deleted. |
+| Resize during Read/Write/Del | Read/Write/Del exhibit normal behavior. Resize operation restarts for the given partition if interrupted by a write or delete. |
 | Read | Read works with expected input/outputs |
 | Write | Write works with expected input/outputs |
 | Delete | Delete works with expected input/outputs |
+
+The expected inputs/outputs formats for testing can be found in the sections
+detailing each operation. In all of these scenarios the 'state' refers to the
+document version.
 
 ## Quality Metrics
 We will keep track of metrics both to ensure that our system is behaving as expected,
@@ -724,7 +738,8 @@ using test fixtures in the DEVO environment to ensure we know the real state of 
 
 **Code Base Metrics**
 Average Function Length: This metric is used to determine if functions are performing
-too much logic. This metric will be stratified for Python and Java.
+too much logic. This metric will be stratified for Python and Java. We will aim
+for python files shorter than 200 lines and java files shorter than 300 lines
 
 Average File Length: This metric can help us determine which packages or modules
 are responsible for too much behavior. This will again by stratified by programming language.
@@ -735,6 +750,10 @@ code loosely coupled so we can easily make changes. This ease of change helps
 make our codebase highly maintainable.
 
 ## Coding Standards
+The coding standards for Python, Java, and accompanying documentation are
+enumerated below. Coding standards will be enforced via code reviews which will
+be conducted with each pull request.
+
 **Python**  
 We will be following the PEP 8 style guide for Python. The Python version we will
 use is Python 2.7.
@@ -758,8 +777,10 @@ publically available methods should be commented with the types of inputs and ou
 All modules and classes should have a block comment explaining the purpose of the
 module/class as well as any global/member variables.
 
+The full Python style guide can be found [here.](https://www.python.org/dev/peps/pep-0008/)  
 
-**Java**
+
+**Java**  
 We will be following the Google Java style guide. The Java version we will
 use is Java 9.
 
@@ -778,6 +799,8 @@ In-line comments should be used to indicate the purpose of each block of code. A
 publically available methods should be commented with the types of inputs and outputs.
 All classes should have a block comment explaining the purpose of the class as well
 as the purpose of all member variables.
+
+The full Java style guide can be found [here.](https://google.github.io/styleguide/javaguide.html)
 
 **Documentation**  
 All documentation will be written in markdown. Documentation will exist for every
@@ -809,8 +832,8 @@ the overlap of token ranges stored in each index partition.
 
 | Task | Assignee |
 |------|----------|
-|Search Service | |
-|Write Service | |
-|Stop Word Service | |
-|Stop Word Generation | |
-|Index Resizing & Redistribution | |  
+|Search Service | Tyler |
+|Write Service | Matthew |
+|Stop Word Service | Chris |
+|Stop Word Generation | Sensen |
+|Index Resizing & Redistribution | Matthew |  
