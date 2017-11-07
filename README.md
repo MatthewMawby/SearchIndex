@@ -569,7 +569,7 @@ to the other method later. The largest drawback to collecting stop words this wa
 that it causes consistency issues. The stop words won't represent a consistent state
 of the index since changes to the tokens may happen during stop word collection.
 
-**Determining stop words**
+**Determining stop words**  
 This operation requires a process to iterate over all partitions of the index and
 count the number of occurrences for all tokens within the index. Only tokens with
 ngramSize of 1 are checked. The top N most frequently occurring tokens are added
@@ -618,7 +618,7 @@ and that all sub-components behave as expected when operating in conjunction.
 Since we are using two different languages for our Lambdas, we will need to define
 unit testing standards for both of them.
 
-**Python**
+**Python**  
 Python has a built in testing library 'unittest'. This library allows us to easily
 create test classes as well as methods. It also provides an easy way to mock dependencies
 which is critically important when writing unit tests for a large scale system.
@@ -633,7 +633,7 @@ test coverage. PyTest can be easily integrated into testing scripts which could 
 us to create interesting metrics such as unit testing velocity. (What % of unpushed
 code is covered by current unit tests)
 
-**Java**
+**Java**  
 The philosophy for testing Java is the same as with python, but the frameworks
 for doing so are different. We will use Junit to create our test classes and to
 run our tests. In order to mock dependencies, we'll use the Mockito library. The
@@ -650,7 +650,7 @@ perform black-box testing to ensure that our tests do not break with changing
 implementations, however some white box testing will be required to mock external
 dependencies.
 
-These are the scenarios that MUST succeed in order for correct Indexing behavior.
+These are the scenarios that **MUST** succeed in order for correct Indexing behavior.
 
 | Scenario | Expectation |
 |----------|-------------|
@@ -701,7 +701,7 @@ use metrics to keep track of the software development process and to track the
 quality of the code base. These metrics will help keep us honest and ensure that
 we are meeting our software development and coding standards.
 
-**Search Engine Quality Metrics**
+**Search Engine Quality Metrics**  
 Scalability:
 - Number of Failed Operations: This number should increase linearly with the size
 of the index. If this increases faster than the size of the index, then we should
@@ -736,7 +736,7 @@ using test fixtures in the DEVO environment to ensure we know the real state of 
 
 **Software Development Process Metrics**
 
-**Code Base Metrics**
+**Code Base Metrics**  
 Average Function Length: This metric is used to determine if functions are performing
 too much logic. This metric will be stratified for Python and Java. We will aim
 for python files shorter than 200 lines and java files shorter than 300 lines
