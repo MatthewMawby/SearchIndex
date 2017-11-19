@@ -347,13 +347,12 @@ requestor.
 
 Valid return codes are:  
 
-| return code | meaning | description |
-|-------------|---------|-------------|
-| 0 | success | Read completed in its entirety without error. |
-| 1 | partial failure | Read failed for one or more tokens |
-| 2 | throttling failure | Read failed due to database throttling. |
-| 3 | internal failure | Read failed due to internal error. |
-| 4 | timeout failure | Read failed due to timeout. |
+| return code | error | description |
+|-------------|-------|-------------|
+| 0 | success | Read completed without error. |
+| 1 | throttling failure | Read failed due to throttling. |
+| 2 | internal failure | Read failed due to internal error. |
+| 3 | timeout failure | Read failed due to timeout. |
 
 It is important to note that the role of the aggregator is performed
 by the initial node that dispatched the search query.
@@ -455,14 +454,13 @@ The aggregator sends a response back to the requestor in the following format:
 
 Valid return codes are:  
 
-| return code | meaning | description |
-|-------------|---------|-------------|
-| 0 | success | Write completed in its entirety without error. |
-| 1 | partial failure | One or more tokens failed to write. |
-| 2 | lock failure | Write failed because the document is locked. |
-| 3 | throttling failure | Write failed due to database throttling. |
-| 4 | internal failure | Write failed due to internal error. |
-| 5 | timeout failure | Write failed due to timeout. |
+| return code | error | description |
+|-------------|-------|-------------|
+| 0 | success | Write completed without error. |
+| 1 | throttling failure | Write failed due to throttling. |
+| 2 | internal failure | Write failed due to internal error. |
+| 3 | timeout failure | Write failed due to timeout. |
+| 4 | lock failure | Write failed to acquire document level lock. |
 
 **Write Operation**  
 ![Write Operation](assets/write_operation.png)  
@@ -539,14 +537,13 @@ to the requestor:
 
 Valid return codes are:  
 
-| return code | meaning | description |
-|-------------|---------|-------------|
-| 0 | success | Delete completed in its entirety without error. |
-| 1 | partial failure | One or more tokens failed to delete. |
-| 2 | lock failure | Delete failed because the document is locked. |
-| 3 | throttling failure | Delete failed due to database throttling. |
-| 4 | internal failure | Delete failed due to internal error. |
-| 5 | timeout failure | Delete failed due to timeout. |
+| return code | error | description |
+|-------------|-------|-------------|
+| 0 | success | Delete completed without error. |
+| 1 | throttling failure | Delete failed due to throttling. |
+| 2 | internal failure | Delete failed due to internal error. |
+| 3 | timeout failure | Delete failed due to timeout. |
+| 4 | lock failure | Delete failed to acquire document level lock. |
 
 ### Consistency
 Since the index is partitioned and distributed, maintaining consistency can
