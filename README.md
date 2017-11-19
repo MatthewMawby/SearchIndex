@@ -1,3 +1,26 @@
+- [Overview](#overview)
+- [Constraints](#constraints)
+- [Index Representation](#index-representation)
+	- [Index Representation](#index-representation)
+	- [Index Partitioning & Persistence](#index-partitioning-persistence)
+	- [Index Metadata Table](#index-metadata-table)
+	- [Document Table](#document-table)
+- [Index Behavior](#index-behavior)
+	- [Read](#read)
+	- [Write](#write)
+	- [Delete](#delete)
+	- [Consistency](#consistency)
+	- [Background Scans](#background-scans)
+		- [N-Gram Operations](#n-gram-operations)
+		- [Index Partition Operations](#index-partition-operations)
+- [Testing](#testing)
+	- [Unit Testing](#unit-testing)
+	- [Integration Testing](#integration-testing)
+- [Quality Metrics](#quality-metrics)
+- [Coding Standards](#coding-standards)
+- [Division of Labor](#division-of-labor)
+
+
 ## Overview
 Creating a search index for a large number of documents is not an easy task. It
 requires the acquisition, processing, storage, and retrieval of large amounts of
