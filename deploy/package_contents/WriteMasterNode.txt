@@ -1,0 +1,5 @@
+src/python/write/lambda_function.py
+src/python/utils/document_model.py
+src/python/utils/document_controller.py
+src/python/utils/index_model.py
+src/python/utils/index_controller.py
