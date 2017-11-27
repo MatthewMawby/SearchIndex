@@ -60,12 +60,13 @@ class DocumentModel(object):
                 self.LOCK_NO: 0,
                 self.UPDATING: False,
                 self.DELETE: False,
-                self.LAST_UPDATE: datetime.now()
+                self.LAST_UPDATE: str(datetime.now())
             },
             self.EXTERNAL: {
                 self.TOKEN_RANGES: []
             }
         }
+        # for verification
         self._top_level_fields = Set(self.VALID_TOP_LEVEL_FIELDS)
         self._internal_fields = Set(self.VALID_INTERNAL_FIELDS)
         self._external_fields = Set(self.VALID_EXTERNAL_FIELDS)
@@ -80,6 +81,9 @@ class DocumentModel(object):
                 and self._external_fields ==
                 Set(self._info[self.EXTERNAL].keys()))
 
+    def get_payload(self):
+        return self._info
+
     def with_pkey(self, pkey):
         self._info[self.PKEY] = pkey
         return self
@@ -93,7 +97,7 @@ class DocumentModel(object):
         return self
 
     def with_index_time(self, index_time):
-        self._info[self.EXTERNAL][self.LAST_INDEXED] = index_time
+        self._info[self.EXTERNAL][self.LAST_INDEXED] = str(index_time)
         return self
 
     def with_token_range(self, range_name, range_start, range_end):
@@ -118,5 +122,5 @@ class DocumentModel(object):
         return self
 
     def set_last_update(self, update_time):
-        self._info[self.INTERNAL][self.LAST_UPDATE] = update_time
+        self._info[self.INTERNAL][self.LAST_UPDATE] = str(update_time)
         return self

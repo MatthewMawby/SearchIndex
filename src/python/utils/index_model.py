@@ -11,14 +11,16 @@ class IndexModel(object):
 
     # Attributes
     PKEY = 'pKey'
-    SORT_KEY = 'startingToken'
+    START_TOKEN = 'startingToken'
+    END_TOKEN = 'endingToken'
     S3_KEY = 's3Key'
     SIZE = 'size'
     VERSION = 'versionNo'
 
     # Assign Valid Fields
     VALID_FIELDS = [PKEY,
-                    SORT_KEY,
+                    START_TOKEN,
+                    END_TOKEN,
                     S3_KEY,
                     SIZE,
                     VERSION]
@@ -30,6 +32,9 @@ class IndexModel(object):
         }
         self._valid_fields = Set(self.VALID_FIELDS)
 
+    def get_payload(self):
+        return self._info
+
     def verify(self):
         return (self._valid_fields == Set(self._info.keys()))
 
@@ -37,8 +42,12 @@ class IndexModel(object):
         self._info[self.PKEY] = pkey
         return self
 
-    def with_sort_key(self, sort_key):
-        self._info[self.SORT_KEY] = sort_key
+    def with_start_token(self, start_token):
+        self._info[self.START_TOKEN] = start_token
+        return self
+
+    def with_end_token(self, end_token):
+        self._info[self.END_TOKEN] = end_token
         return self
 
     def with_s3_key(self, s3_key):
