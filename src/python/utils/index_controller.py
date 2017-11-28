@@ -4,15 +4,18 @@ from index_model import IndexModel
 
 
 class IndexController(object):
+    '''
+    This class is responsible for interactions with the
+    INDEX_PARTITION_METADATA table. It creates and updates metadata for
+    partitions and also determines which partitions contain specified tokens.
+    '''
 
     INDEX_METADATA_TABLE = 'INDEX_PARTITION_METADATA'
     INDEX_GSI = 'INDEX_START'
 
     def __init__(self):
-        self._dynamodb = boto3.client('dynamodb')
         self._index_table = (boto3.resource('dynamodb')
                                   .Table(self.INDEX_METADATA_TABLE))
-
 
     # create a new index document if the provided model is valid
     def create_new_index(self, index_model):
