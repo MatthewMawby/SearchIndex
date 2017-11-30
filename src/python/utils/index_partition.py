@@ -55,6 +55,9 @@ class _IndexPartition(object):
     def ending_token(self):
         return self._ending_token
 
+    def get_token_list(self):
+        return self._partition.keys()
+
     ''' INDEX FUNCTIONALITY '''
     # adds token to index if not present, replaces oldest version if present
     def add_token(self, token, doc_id, lock_no, ngram_size, locations):
