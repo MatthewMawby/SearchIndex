@@ -30,7 +30,7 @@ class DocumentController(object):
         except Exception as ex:
             print "ERROR: Failed to query {0} \
             table: {1}".format(self.DOCUMENT_TABLE, ex)
-            return None
+            raise ex
 
     # set updating field to true & set lastUpdate timestamp
     def lock_document(self, doc_id):
@@ -78,4 +78,4 @@ class DocumentController(object):
             return True
         except Exception as ex:
             print "ERROR: Failed to create new document: {0}".format(ex)
-            return False
+            raise ex
