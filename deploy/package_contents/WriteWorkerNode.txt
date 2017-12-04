@@ -1,9 +1,8 @@
-src/python/write/write_master_node.py
+src/python/write/write_worker_node.py
 src/python/write/write_task_model.py
 src/python/utils/config.py
-src/python/utils/document_controller.py
-src/python/utils/document_model.py
 src/python/utils/index_controller.py
 src/python/utils/index_model.py
-src/python/utils/input_models.py
+src/python/utils/index_partition.py
+src/python/utils/index_storage.py
 src/python/utils/kinesis.py
