@@ -1,6 +1,8 @@
 from sets import Set
 from datetime import datetime
 
+from input_models import WriteInputModel
+
 
 class DocumentModel(object):
     '''
@@ -84,6 +86,33 @@ class DocumentModel(object):
     def get_payload(self):
         return self._info
 
+    def get_pkey(self):
+        return self._info[self.PKEY]
+
+    def get_lock_no(self):
+        return int(self._info[self.INTERNAL][self.LOCK_NO])
+
+    def get_last_update(self):
+        return (datetime.strptime(self._info[self.INTERNAL][self.LAST_UPDATE],
+                "%Y-%m-%d %H:%M:%S.%f"))
+
+    def load_from_write_input(self, write_input):
+        # set values
+        (self.with_pkey(write_input.get_id())
+             .with_token_count(write_input.get_token_count())
+             .with_word_count(write_input.get_word_count())
+             .with_index_time(datetime.now())
+             .set_updating(True)
+             .set_lockno(0))
+
+        self._info[self.EXTERNAL][self.TOKEN_RANGES] = []
+        # add token ranges
+        for item in write_input.get_token_ranges():
+            range_name = item[WriteInputModel.RANGE_NAME]
+            start = item[WriteInputModel.RANGE_START]
+            end = item[WriteInputModel.RANGE_END]
+            self.with_token_range(range_name, start, end)
+
     def with_pkey(self, pkey):
         self._info[self.PKEY] = pkey
         return self
@@ -123,4 +152,10 @@ class DocumentModel(object):
 
     def set_last_update(self, update_time):
         self._info[self.INTERNAL][self.LAST_UPDATE] = str(update_time)
+        return self
+
+    def set_doc_info(self, doc_info):
+        if doc_info is None:
+            return self
+        self._info = doc_info
         return self
