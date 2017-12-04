@@ -1,5 +1,7 @@
 import cPickle as pickle
 
+from config import Config
+
 
 class IndexPartition(object):
     '''
@@ -26,10 +28,12 @@ class IndexPartition(object):
     def serialize(self, out_file):
         with open(out_file, 'wb') as payload:
             pickle.dump(self._partition, payload, pickle.HIGHEST_PROTOCOL)
+            payload.close()
 
     def deserialize(self, in_file):
         with open(in_file, 'rb') as payload:
             self._partition = pickle.load(payload)
+            payload.close()
 
 
 class _IndexPartition(object):
@@ -66,18 +70,37 @@ class _IndexPartition(object):
             self._starting_token = token
         if token > self._ending_token or self._ending_token is None:
             self._ending_token = token
-        # add token data to partition
         version_info = {'lockNo': lock_no, 'locations': locations}
+
+        # add token data to partition if not present
         if token not in self._partition:
             versions = [version_info]
             doc_info = {'documentID': doc_id, 'versions': versions}
             token_info = {'ngram_size': ngram_size,
-                          'documentOccurrences': doc_info}
+                          'documentOccurrences': [doc_info]}
+            self._partition[token] = token_info
             self._size += 1
+        # otherwise update the info for the token
         else:
+            # find the document info for this token in the index
             token_info = self._partition[token]
-            doc_info = token_info[doc_id]
-            versions = doc_info['versions']
-            # newest version is always first version
-            versions[1] = versions[0]
-            versions[0] = version_info
+            occurences = token_info['documentOccurrences']
+            doc_info = None
+            for info in occurences:
+                if info['documentID'] == doc_id:
+                    doc_info = info
+                    break
+
+            # if not present add it
+            if doc_info is None:
+                versions = [version_info]
+                doc_info = {'documentID': doc_id, 'versions': versions}
+                self._partition[token]['documentOccurrences'].append(doc_info)
+            # otherwise update version info
+            else:
+                versions = doc_info['versions']
+                if len(versions) == 2:
+                    versions[1] = versions[0]
+                    versions[0] = version_info
+                else:
+                    versions.insert(0, version_info)
