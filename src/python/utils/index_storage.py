@@ -16,11 +16,12 @@ class IndexStorage(object):
         self._index_storage = boto3.client('s3')
 
     def get_partition(self, partition_uri):
+        local_path = partition_uri
         try:
             self._index_storage.download_file(self.INDEX_STORAGE,
                                               partition_uri + '.pkl',
-                                              partition_uri)
-            return partition_uri
+                                              local_path)
+            return local_path
         except Exception as ex:
             print ("ERROR: Partition {0} not found in storage"
                    .format(partition_uri))
@@ -39,25 +40,14 @@ class IndexStorage(object):
                    .format(partition_uri))
             raise ex
 
-
-"""
-''' SAMPLE USAGE WITH INDEX_PARTITION CLASS'''
-# create partition with test data
-partition = IndexPartition()
-print "Partition size is {0}".format(partition.size())
-print "Partition starting_token is {0}".format(partition.starting_token())
-print "Partition ending_token is {0}".format(partition.ending_token())
-partition.add_token('test', 'testID', 0, 1, [0])
-
-# write partition, then retrieve it
-storage = IndexStorage()
-storage.write_partition('test_partition', partition)
-payload = storage.get_partition('test_partition')
-
-# load partition from payload
-partition2 = IndexPartition()
-partition2.deserialize(payload)
-print "Partition size is {0}".format(partition2.size())
-print "Partition starting_token is {0}".format(partition2.starting_token())
-print "Partition ending_token is {0}".format(partition2.ending_token())
-"""
+    def delete_partition(self, partition_uri):
+        partition_uri = partition_uri
+        partition_uri += '.pkl'
+        try:
+            self._index_storage.delete_object(
+                Bucket=self.INDEX_STORAGE,
+                Key=partition_uri
+            )
+        except Exception as ex:
+            print "ERROR: Failed to delete partition."
+            raise ex
