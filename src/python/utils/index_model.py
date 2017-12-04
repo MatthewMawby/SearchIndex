@@ -11,17 +11,17 @@ class IndexModel(object):
 
     # Attributes
     PKEY = 'pKey'
+    STORAGE_KEY = 's3Key'
     START_TOKEN = 'startingToken'
     END_TOKEN = 'endingToken'
-    S3_KEY = 's3Key'
     SIZE = 'size'
     VERSION = 'versionNo'
 
     # Assign Valid Fields
     VALID_FIELDS = [PKEY,
+                    STORAGE_KEY,
                     START_TOKEN,
                     END_TOKEN,
-                    S3_KEY,
                     SIZE,
                     VERSION]
 
@@ -31,6 +31,24 @@ class IndexModel(object):
             self.VERSION: 0
         }
         self._valid_fields = Set(self.VALID_FIELDS)
+
+    def get_id(self):
+        return str(self._info[self.PKEY])
+
+    def get_storage_key(self):
+        return str(self._info[self.STORAGE_KEY])
+
+    def get_size(self):
+        return self._info[self.SIZE]
+
+    def get_start_token(self):
+        return self._info[self.START_TOKEN]
+
+    def get_end_token(self):
+        return self._info[self.END_TOKEN]
+
+    def get_version(self):
+        return self._info[self.VERSION]
 
     def get_payload(self):
         return self._info
@@ -42,6 +60,10 @@ class IndexModel(object):
         self._info[self.PKEY] = pkey
         return self
 
+    def with_storage_key(self, skey):
+        self._info[self.STORAGE_KEY] = skey
+        return self
+
     def with_start_token(self, start_token):
         self._info[self.START_TOKEN] = start_token
         return self
@@ -50,14 +72,10 @@ class IndexModel(object):
         self._info[self.END_TOKEN] = end_token
         return self
 
-    def with_s3_key(self, s3_key):
-        self._info[self.S3_KEY] = s3_key
-        return self
-
-    def set_size(self, size):
+    def with_size(self, size):
         self._info[self.SIZE] = size
         return self
 
-    def set_version(self, version):
+    def with_version(self, version):
         self._info[self.VERSION] = version
         return self
