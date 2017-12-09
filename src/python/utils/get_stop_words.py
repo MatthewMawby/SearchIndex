@@ -6,68 +6,58 @@ from stopword_model import StopWordModel
 
 import boto3
 
+class StopWordGenerator:
 
-'''
-Return all partion keys from dynamodb
-'''
-def get_s3_keys():
-    dynamo_client = boto3.client("dynamodb")
-    res = dynamo_client.scan(
-        TableName="INDEX_PARTITION_METADATA",
-        AttributesToGet=[
-            's3Key',
-        ]
-    )
-    s3_keys = []
-    for i in res['Items']:
-        s3_keys.append(i['s3Key']['S'])
-    return s3_keys
+    def __init__(self):
+        self._storage = IndexStorage()
+        self._partition = None
+        self._tokens = {}
+        self._stopword = StopWordController()
 
-'''
-Search a partition and update all_tokens with a given version
-'''
-def search_partition(key,all_tokens,cversion):
-    # lookup partition using key
-    storage = IndexStorage()
-    payload = storage.get_partition(key)
-    # deserialize key
-    partition = IndexPartition()
-    partition.deserialize(payload)
+    '''
+    Search a partition and update all_tokens with a given version
+    '''
+    def search_partition(self,key):
+        # lookup partition using key
+        payload = self._storage.get_partition(key)
+        # deserialize key
+        self.partition = IndexPartition()
+        self.partition.deserialize(payload)
+        # length of the token
+        partition_token = self.partition.get_token_list()
 
-    # length of the token
-    partition_token = partition.get_token_list()
+        for key in self.partition.get_token_list():
+            addamount = self.partition.get_token_count(key)
+            if(addamount<=0):
+                continue
+            if(key in self._tokens.keys()):
+                self._tokens[key] += addamount
+            else:
+                self._tokens[key] = addamount
+    '''
+    generate stop words by searching through all partitions
+    '''
+    def generate_stopwords(self):
+        s3_keys = self._storage.get_s3_keys()
+        for k in s3_keys:
+            self.search_partition(k)
+    '''
+    iterate through all tokens and add to stopwords table
+    '''
+    def add_stopwords_table(self):
+        for t in self._tokens.keys():
+            sw = StopWordModel()
+            sw.set_data(t,self._tokens[t])
+            self._stopword.add_word(sw)
+    '''
+    return all stop words as dictionary
+    '''
+    def get_stop_words(self):
+        return self._tokens
 
-
-    for key in partition.get_token_list():
-        addamount = partition.get_token_count(key,cversion)
-        if(addamount<=0):
-            continue
-
-        if(key in all_tokens.keys()):
-            all_tokens[key] += addamount
-        else:
-            all_tokens[key] = addamount
-
-#todo
-# add result to stop words table
-
-
-
-all_tokens = {}
-s3_keys = get_s3_keys()
-
-all_tokens = {}
-s3_keys = get_s3_keys()
-cversion = 1
-
-for key in s3_keys:
-    search_partition(key,all_tokens,cversion)
-
-STOP_WORD = StopWordController()
-for t in all_tokens.keys():
-    sw = StopWordModel()
-    sw.set_data(t,all_tokens[t],cversion)
-    STOP_WORD.add_word(sw)
-
-
-print(all_tokens)
+def stopword_handler(event, context):
+    sw = StopWordGenerator()
+    sw.generate_stopwords()
+    sw.add_stopwords_table()
+    tokens = sw.get_stop_words()
+    return tokens

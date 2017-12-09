@@ -38,19 +38,15 @@ class IndexPartition(object):
     def get_token_list(self):
         return self._partition.get_token_list()
 
-    def get_token_count(self,key,version):
-        if(key not in self._partition._partition.keys()):
+    def get_token_count(self,key):
+        if key not in self._partition._partition.keys():
             return -1
-        if(self._partition._partition[key]['ngram_size']!=1):
+        if self._partition._partition[key]['ngram_size']!=1:
             return -1
 
         count = 0
         for doc in self._partition._partition[key]['documentOccurrences']:
-            for v in doc['versions']:
-                if v['lockNo'] == version:
-                    count+= len(v['locations'])
-                    break
-
+            count += len(doc['versions'][0]['locations'])
         return count
 
 class _IndexPartition(object):
