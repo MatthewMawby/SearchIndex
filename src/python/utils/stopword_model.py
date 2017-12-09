@@ -1,7 +1,6 @@
 from sets import Set
 from datetime import datetime
 
-
 class StopWordModel(object):
 
     # Top Level Fields
@@ -33,7 +32,6 @@ class StopWordModel(object):
         return self
 
     def load_from_input(self, stop_word_input):
-        # set values
         (self.with_pkey(stop_word_input['pKey'])
              .with_sortkey(stop_word_input['sortKey']))
         return self
