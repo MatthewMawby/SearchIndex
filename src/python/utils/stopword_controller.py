@@ -30,7 +30,7 @@ class StopWordController(object):
             table: {1}".format(self.STOP_WORD_TABLE, ex)
             return None
 
-    # create a new index document if the provided model is valid
+    # create a new index document if the provided model is valid and verified
     def add_word(self, stop_word_model):
         try:
             # replacing since update_item cannot modify sortkey

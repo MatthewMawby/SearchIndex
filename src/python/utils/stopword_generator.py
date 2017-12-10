@@ -55,10 +55,3 @@ class StopWordGenerator:
     '''
     def get_stop_words(self):
         return self._tokens
-
-def stopword_handler(event, context):
-    sw = StopWordGenerator()
-    sw.generate_stopwords()
-    sw.add_stopwords_table()
-    tokens = sw.get_stop_words()
-    return tokens
