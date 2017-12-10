@@ -13,7 +13,6 @@ class StopWordController(object):
         self._stop_word_table = (boto3.resource('dynamodb')
                                 .Table(self.STOP_WORD_TABLE))
 
-
     # retrieves the stop
     def get_word(self, word):
         try:
@@ -35,6 +34,9 @@ class StopWordController(object):
     def add_word(self, stop_word_model):
         try:
             # replacing since update_item cannot modify sortkey
+            if(not stop_word_model.verify()):
+                return
+
             self._stop_word_table.put_item(
                 Item=stop_word_model.get_payload()
             )

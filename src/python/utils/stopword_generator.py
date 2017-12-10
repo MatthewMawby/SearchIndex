@@ -1,6 +1,6 @@
 from index_storage import IndexStorage
 from index_partition import IndexPartition
-
+from index_controller import IndexController
 from stopword_controller import StopWordController
 from stopword_model import StopWordModel
 
@@ -13,6 +13,7 @@ class StopWordGenerator:
         self._partition = None
         self._tokens = {}
         self._stopword = StopWordController()
+        self._index = IndexController()
 
     '''
     Search a partition and update all_tokens with a given version
@@ -38,8 +39,8 @@ class StopWordGenerator:
     generate stop words by searching through all partitions
     '''
     def generate_stopwords(self):
-        s3_keys = self._storage.get_s3_keys()
-        for k in s3_keys:
+        partition_ids = self._index.get_partition_ids()
+        for k in partition_ids:
             self.search_partition(k)
     '''
     iterate through all tokens and add to stopwords table

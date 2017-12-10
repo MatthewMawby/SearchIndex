@@ -14,7 +14,6 @@ class IndexStorage(object):
 
     def __init__(self):
         self._index_storage = boto3.client('s3')
-        self._active_partitions = ([]);
 
     def get_partition(self, partition_uri):
         local_path = partition_uri
@@ -28,31 +27,13 @@ class IndexStorage(object):
                    .format(partition_uri))
             raise ex
 
-    def get_s3_keys(self):
-        dynamo_client = boto3.client("dynamodb")
-        res = dynamo_client.scan(
-            TableName="INDEX_PARTITION_METADATA",
-            AttributesToGet=[
-                's3Key',
-            ]
-        )
-        s3_keys = []
-        for i in res['Items']:
-            s3_keys.append(i['s3Key']['S'])
-        return s3_keys
-
-    def get_active_partitions(self):
-        return self._active_partitions
-
     def write_partition(self, partition_uri, partition):
         partition_uri += '.pkl'
         try:
             partition.serialize(partition_uri)
             payload = open(partition_uri, 'rb')
             res = self._index_storage.put_object(Bucket=self.INDEX_STORAGE,
-                                                 Key=partition_uri,
-                                                 Body=payload)
-            self._active_partitions.add(partition_uri)
+                                     Body=payload)
         except Exception as ex:
             print ("ERROR: Failed to write partition {0} to storage."
                    .format(partition_uri))
@@ -66,7 +47,6 @@ class IndexStorage(object):
                 Bucket=self.INDEX_STORAGE,
                 Key=partition_uri
             )
-            self._active_partitions.remove(partition_uri)
         except Exception as ex:
             print "ERROR: Failed to delete partition."
             raise ex
