@@ -35,6 +35,19 @@ class IndexPartition(object):
             self._partition = pickle.load(payload)
             payload.close()
 
+    def get_token_list(self):
+        return self._partition.get_token_list()
+
+    def get_token_count(self,key):
+        if key not in self._partition._partition.keys():
+            return -1
+        if self._partition._partition[key]['ngram_size']!=1:
+            return -1
+
+        count = 0
+        for doc in self._partition._partition[key]['documentOccurrences']:
+            count += len(doc['versions'][0]['locations'])
+        return count
 
 class _IndexPartition(object):
     '''

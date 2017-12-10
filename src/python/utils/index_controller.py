@@ -26,6 +26,18 @@ class IndexController(object):
             Item=index_model.get_payload()
         )
 
+    def get_partition_ids(self):
+        res = self._index_table.scan(
+            TableName="INDEX_PARTITION_METADATA",
+            AttributesToGet=[
+                's3Key',
+            ]
+        )
+        partition_ids = []
+        for i in res['Items']:
+            partition_ids.append(i['s3Key'])
+        return partition_ids
+
     # get pkeys for partitions the provided token might be in
     def get_partition_for_token(self, token):
         try:
