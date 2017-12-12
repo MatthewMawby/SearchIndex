@@ -1,4 +1,6 @@
-## Write Operation
+## Write Operation Overview
+This directory contains the application logic for the write operation.
+This operation is represented visually here:
 ![Write Operation](/assets/write_operation.png) 
 
 ### Write Master Node
