@@ -7,8 +7,12 @@
 - [Index Partition](#index-partition)
 - [Index Storage](#index-storage)
 - [Write Input Model](#write-input-model)
+- [Kinesis](#kinesis)
+- [Stop Word Controller](#stop-word-controller)
+- [Stop Word Model](#stop-word-model)
+- [Stop Word Generator](#stop-word-generator)
 
-## Overview
+### Overview
 
 This directory contains the models and classes used to facilitate various index operations.
 These models are intended to be easily deployed to AWS and used in the Write, Search, and Stop Word services.
@@ -170,3 +174,62 @@ Provides the following functionality
 This class implements the data model & functions for parsing an
 input request into an input object for the write service. This
 class initializes and retrieves input information from the request.
+Use by calling parse_from_request(self, req) with a dictionary containing the write information.\
+
+### Kinesis
+
+This class is responsible for dispatching tasks to worker threads. This
+implementation wraps kinesis to post records to the stream provided at
+initialization. It also parses data from b64 strings back to python
+dictionaries. It contains the following functions:
+
+* dispatch_tasks(self, task_list)
+  * Given a list of WriteTaskModels, post a record for each task in the Kinesis stream
+  * Raises exception on failure
+* parse_tasks_from_record(self, records)
+  * Parse a list of tasks from Kinesis records
+
+### Stop Word Controller
+
+This class is responsible for interaction with the STOP_WORD table.
+It creates new stop word entries in the table and queries the table to 
+determine if a particular word is a stop word. It contains the following functions:
+
+* get_word(self, word)
+  * Returns a StopWordModel containing the requested word if it exists in the STOP_WORD table
+  * Returns None if the requested word is not a stop word.
+* add_word(self, stop_word_model)
+  * Given a StopWordModel, Create a new Stop Word entry 
+  in the STOP_WORD table if the provided model is valid and verified
+  * Returns False on failure
+  
+### Stop Word Model
+
+This class implements the data model required for storing information
+to the STOP_WORD table. It works in unison with the StopWordController
+class to create an easy to use interface that is decoupled from the actual
+storage implementation used for stop words. It contains only the following attributes:
+
+* PKey
+  * The string of the stop word
+  * Used as the key for storage
+* Sort Key
+  * Number of times the word appears in all documents
+  * Used to sort results of linear scan in order of documetn occurrence count
+ 
+### Stop Word Generator
+
+This class is responsible for performing a scan of 
+all partitions and determining the new stop words. 
+Example usage can be found in the stop_word_handler 
+function in stopword_generation_service.py.
+This class contains the following functions to facilitate stop word determination:
+
+* generate_stopwords(self)
+  * Generates stop words by searching through all partitions
+* search_partition(self, key)
+  * Search a partition and update all tokens with a given version
+* add_stopwords_table(self)
+  * Iterate through all tokens and add to storage using StopWordController
+* get_stop_words(self)
+  * Returns all stop words as a dictionary
