@@ -63,6 +63,7 @@ token. However, the intent is to allow for a single worker node to interact with
 This class implements a model for creating write tasks. 
 These tasks are posted to kinesis and executed by worker nodes.
 It contains the following attributes:
+
 * Token Operations - Contains all the token information (token, locations, partition, ngram size)
 * Lock Number Next - For document locking
 * Document ID - Document ID of the document for this write call
@@ -83,6 +84,7 @@ write_task = (WriteTaskModel().with_write_id(write_id)
 ```
 
 This class also provides the following functionality:
+
 * verify(self) - Used by Master Node, ensures provided attributes are valid.
 * load(self, task_info) - Used by Worker Node, loads a dictionary into the WriteTaskModel
 * get_payload(self) - Returns the dictionary of the WriteTaskModel attributes
