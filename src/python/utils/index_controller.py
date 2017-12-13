@@ -21,22 +21,31 @@ class IndexController(object):
     # create a new index document if the provided model is valid
     def create_new_index(self, index_model):
         if not index_model.verify():
-            raise Exception("Invalid index model.")
-        self._index_table.put_item(
-            Item=index_model.get_payload()
-        )
+            return False
+        try:
+            self._index_table.put_item(
+                Item=index_model.get_payload()
+            )
+            return True
+        except Exception as ex:
+            print "Failed to create index metadata document: {0}".format(ex)
+            raise ex
 
     def get_partition_ids(self):
-        res = self._index_table.scan(
-            TableName="INDEX_PARTITION_METADATA",
-            AttributesToGet=[
-                's3Key',
-            ]
-        )
-        partition_ids = []
-        for i in res['Items']:
-            partition_ids.append(i['s3Key'])
-        return partition_ids
+        try:
+            res = self._index_table.scan(
+                TableName="INDEX_PARTITION_METADATA",
+                AttributesToGet=[
+                    's3Key',
+                ]
+            )
+            partition_ids = []
+            for i in res['Items']:
+                partition_ids.append(i['s3Key'])
+            return partition_ids
+        except Exception as ex:
+            print "ERROR: Failed to retrieve partition ids: {0}".format(ex)
+            raise ex
 
     # get pkeys for partitions the provided token might be in
     def get_partition_for_token(self, token):

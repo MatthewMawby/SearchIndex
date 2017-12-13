@@ -33,7 +33,8 @@ class IndexStorage(object):
             partition.serialize(partition_uri)
             payload = open(partition_uri, 'rb')
             res = self._index_storage.put_object(Bucket=self.INDEX_STORAGE,
-                                     Body=payload)
+                                                 Body=payload)
+            return True
         except Exception as ex:
             print ("ERROR: Failed to write partition {0} to storage."
                    .format(partition_uri))
@@ -47,6 +48,7 @@ class IndexStorage(object):
                 Bucket=self.INDEX_STORAGE,
                 Key=partition_uri
             )
+            return True
         except Exception as ex:
             print "ERROR: Failed to delete partition."
             raise ex

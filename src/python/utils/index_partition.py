@@ -24,30 +24,34 @@ class IndexPartition(object):
     def add_token(self, token, doc_id, lock_no, ngram_size, locations):
         self._partition.add_token(token, doc_id, lock_no, ngram_size,
                                   locations)
+        return True
 
     def serialize(self, out_file):
         with open(out_file, 'wb') as payload:
             pickle.dump(self._partition, payload, pickle.HIGHEST_PROTOCOL)
             payload.close()
+        return True
 
     def deserialize(self, in_file):
         with open(in_file, 'rb') as payload:
             self._partition = pickle.load(payload)
             payload.close()
+        return True
 
     def get_token_list(self):
         return self._partition.get_token_list()
 
-    def get_token_count(self,key):
+    def get_token_count(self, key):
         if key not in self._partition._partition.keys():
             return -1
-        if self._partition._partition[key]['ngram_size']!=1:
+        if self._partition._partition[key]['ngram_size'] != 1:
             return -1
 
         count = 0
         for doc in self._partition._partition[key]['documentOccurrences']:
             count += len(doc['versions'][0]['locations'])
         return count
+
 
 class _IndexPartition(object):
     '''

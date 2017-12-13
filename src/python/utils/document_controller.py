@@ -14,7 +14,6 @@ class DocumentController(object):
     DOCUMENT_TABLE = 'DOCUMENTS'
 
     def __init__(self):
-        self._dynamodb = boto3.client('dynamodb')
         self._document_table = (boto3.resource('dynamodb')
                                 .Table(self.DOCUMENT_TABLE))
 
@@ -47,6 +46,7 @@ class DocumentController(object):
                 ':updating': True,
                 ':now': now
             })
+            return True
         except Exception as ex:
             print "ERROR: Failed to acquire lock on document"
             raise ex
@@ -63,6 +63,7 @@ class DocumentController(object):
             }, UpdateExpression=update_expression, ExpressionAttributeValues={
                 ':updating': False
             })
+            return True
         except Exception as ex:
             print "ERROR: Failed to unlock document"
             raise ex
