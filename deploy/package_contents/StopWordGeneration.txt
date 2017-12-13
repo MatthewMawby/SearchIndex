@@ -1,0 +1,7 @@
+src/python/stopword_generation/stopword_generation_service.py
+src/python/stopword_generation/stopword_generator.py
+src/python/utils/index_storage.py
+src/python/utils/index_partition.py
+src/python/utils/index_controller.py
+src/python/utils/stopword_controller.py
+src/python/utils/stopword_model.py
